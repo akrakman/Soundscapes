@@ -2,3 +2,4 @@ holmes_soundscape1.wav
 venv/
 audio/
 sound_effect_model.pkl
+*.wav

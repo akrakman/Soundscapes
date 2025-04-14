@@ -1,11 +1,51 @@
 Text,Effect
-"It is fear, Mr. Holmes. It is terror.",heartbeat
-"You have come in by train this morning, I see.",train
-"A steam engine hissed as it pulled into the platform.",train
-"You had a good drive in a dog-cart, along heavy roads.",dog_bark
-"Sir, I can stand this strain no longer; I shall go mad if it continues.",night_silence
-"Holmes turned to his desk and drew out a small case-book.",paper_rustle
-"It is fear, Mr. Holmes. It is terror.",heartbeat
-"You had a good drive in a dog-cart, along heavy roads.",dog_bark
-"Sir, I can stand this strain no longer; I shall go mad if it continues.",night_silence
-"Holmes turned to his desk and drew out a small case-book.",paper_rustle
+"My heart pounded wildly in my chest",heartbeat
+"I could hear the steady rhythm of my heartbeat",heartbeat
+"The fear made her heartbeat quicken instantly",heartbeat
+"He placed a hand over his racing heart",heartbeat
+"My pulse quickened with dread and anticipation",heartbeat
+"She felt her heart thumping louder each second",heartbeat
+"His heartbeat echoed loudly in the silent room",heartbeat
+"She felt her pulse hammering in her veins",heartbeat
+"A rapid heartbeat betrayed his nervousness",heartbeat
+"Her heartbeat filled her ears, blocking all else out",heartbeat
+"I heard the whistle as the train approached",train
+"The locomotive roared into the quiet station",train
+"Steam hissed from the engine as it stopped",train
+"Passengers stepped out onto the bustling platform",train
+"The rhythmic clatter of wheels echoed along the rails",train
+"A distant train whistle pierced the silence",train
+"She boarded the early morning express to London",train
+"The conductor shouted as the train pulled away",train
+"Heavy wheels rattled along the iron tracks",train
+"The train slowly disappeared into the foggy night",train
+"Dogs barked aggressively from behind the fence",dog_bark
+"The distant bark of a dog disturbed the night",dog_bark
+"He heard a dog howling mournfully nearby",dog_bark
+"Suddenly, a fierce bark rang out in the dark",dog_bark
+"The watchdog barked angrily at the strangers",dog_bark
+"A dog's barking echoed across the fields",dog_bark
+"Loud barking startled them from their sleep",dog_bark
+"Dogs barked furiously as the intruder approached",dog_bark
+"A sharp bark of warning filled the air",dog_bark
+"The dog's persistent barking finally subsided",dog_bark
+"She sat silently in the stillness of the night",night_silence
+"Nothing moved or stirred in the deepening silence",night_silence
+"The night was utterly quiet, heavy with tension",night_silence
+"Only silence answered him from the darkened woods",night_silence
+"They sat quietly, enveloped in complete silence",night_silence
+"The night was silent, disturbingly calm",night_silence
+"He stood alone, the silence pressing around him",night_silence
+"In the silence of the night, fear grew stronger",night_silence
+"The village lay in silence beneath the stars",night_silence
+"The heavy silence intensified their fear",night_silence
+"Holmes rustled papers softly at his desk",paper_rustle
+"He unfolded the letter, paper crackling quietly",paper_rustle
+"The gentle rustling of pages filled the quiet room",paper_rustle
+"She heard papers shifting quietly as he searched",paper_rustle
+"Papers rustled as he reviewed the documents",paper_rustle
+"A soft rustling sound marked each turn of the page",paper_rustle
+"The subtle sound of paper rustling broke the silence",paper_rustle
+"She flipped through the manuscript quietly",paper_rustle
+"The letter crinkled softly in her trembling hand",paper_rustle
+"The casebook opened with a quiet rustle",paper_rustle
