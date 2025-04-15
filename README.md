@@ -1,4 +1,4 @@
-```markdown
+```bash
 # 🌀 Soundscape Generator
 
 A production-ready **dynamic soundscape generator** that takes a story or narrative input (`.txt`) and produces a **layered audio experience** (`.wav`) — complete with:
