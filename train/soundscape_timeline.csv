@@ -40,7 +40,7 @@ timestamp_ms,effect,sentence_idx,token
 88800,effect_train.wav,15,the
 89200,effect_heartbeat.wav,15,marks
 92320,effect_dog_barking.wav,16,a
-93536,effect_heartbeat.wav,16,which
+93232,effect_heartbeat.wav,16,cart
 94752,effect_ominous_silence.wav,16,in
 106000,effect_heartbeat.wav,17,
 107043,effect_dog_barking.wav,17,from
