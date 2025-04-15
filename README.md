@@ -1,5 +1,4 @@
-```bash
-# 🌀 Soundscape Generator
+## Soundscape Generator
 
 A production-ready **dynamic soundscape generator** that takes a story or narrative input (`.txt`) and produces a **layered audio experience** (`.wav`) — complete with:
 
@@ -91,20 +90,6 @@ python main2.py --input story.txt --output soundscape.wav
 
 ---
 
-## 🎵 Supported Sound Effects
-
-These must exist inside your `audio/` folder:
-
-- `effect_dog_barking.wav`
-- `effect_paper.wav`
-- `effect_heartbeat.wav`
-- `effect_rain.wav`, `effect_thunder.wav`, `effect_wind.wav`
-- `effect_footsteps_wood.wav`, `effect_creaking_floor.wav`
-- `effect_generic.wav` *(fallback)*  
-…and others defined in `LABEL_TO_EFFECTS` in the code.
-
----
-
 ## 🤖 ML Model (Optional)
 
 The system supports a trained ML model to predict sound labels from tokens:
@@ -131,26 +116,3 @@ After running, you’ll get:
 - **Fear Triggering:** Repeated mentions of "fear" boost heartbeat sound intensity.
 - **Cooldown System:** Prevents sound effect spam via time gating per effect.
 - **Randomization:** Adds natural variation in gain and position.
-
----
-
-## ✅ TODO (For Future Enhancements)
-
-- [ ] Speaker-based voice synthesis
-- [ ] Mood-based background loops
-- [ ] Dynamic ambient layering
-- [ ] GUI front-end
-
----
-
-## 🧾 License
-
-MIT License. Use freely with credit. Sound effects not included — ensure you have the right to use any `.wav` files you add.
-
----
-
-## 👨‍💻 Author
-
-Built for narrative sound design, horror storytelling, or game development.  
-If you find it useful, drop a ⭐ or reach out!
-```
