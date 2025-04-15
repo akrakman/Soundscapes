@@ -68,6 +68,10 @@ class Config:
     BASE_LOOP_DURATION = 30_000    # 30 seconds minimum
     SENTIMENT_THRESHOLDS = {"positive": 0.15, "negative": -0.15}
 
+    # fear stabs
+    FEAR_STAB_PROB = 0.05
+    FEAR_STAB_GAIN = -34
+
     # Volume offsets
     VOLUME_EFFECTS = -12
     EFFECT_COOLDOWN_MS = 4000
@@ -79,7 +83,7 @@ class Config:
     FEAR_VOL_INCREMENT = 4
     FEAR_MAX_BOOST = 10
 
-    # Simple mood-based background loops (no old dict)
+    # Simple mood-based background loops
     MOOD_BACKGROUND = {
         "positive": "background_positive_loop.wav",
         "negative": "background_creepy_loop.wav",
@@ -93,7 +97,7 @@ class Config:
 
     # TTS config
     TTS_ENABLED = True
-    TTS_VOICE_GAIN = -20  # dB to apply to each token TTS chunk
+    TTS_VOICE_GAIN = -20  # dB to apply to each sentence TTS chunk
 
     STOPWORDS = set(stopwords.words("english"))
 
@@ -117,7 +121,7 @@ LABEL_TO_EFFECTS = {
     "generic_effect":   ["effect_generic.wav"]
 }
 
-# Fine-tuned synonyms for paper, letter, desk, etc.
+# Fine-tuned synonyms
 SYNONYMS = {
     "ocean":         ["sea", "waves", "water"],
     "volcano":       ["eruption", "lava", "ash"],
@@ -125,10 +129,12 @@ SYNONYMS = {
     "thunder":       ["lightning", "storm"],
     "rain":          ["shower", "drizzle", "downpour"],
     "wind":          ["breeze", "gust", "draft"],
-    "dog_bark":      ["dog", "dogs", "cart", "dogcart"],
-    # expanded for paper
-    "paper_rustle":  ["paper", "papers", "book", "books", "desk", "desks", "document",
-                      "documents", "casebook", "casebooks", "letter", "letters", "files", "file"]
+    "dog_bark":      ["dog", "dogs", "dogcart"],
+    "paper_rustle":  [
+        "paper", "papers", "book", "books", "desk", "desks",
+        "document", "documents", "casebook", "casebooks",
+        "letter", "letters", "files", "file"
+    ]
 }
 
 AUDIO_CACHE = {}
@@ -146,7 +152,7 @@ def load_model(model_path: str) -> None:
     try:
         with open(model_path, "rb") as f:
             MODEL_PIPELINE = pickle.load(f)
-        logger.info(f"✅ Loaded ML model from {model_path}")
+        logger.info(f"Loaded ML model from {model_path}")
     except FileNotFoundError:
         logger.error(f"Model file not found: {model_path}. No ML predictions.")
         MODEL_PIPELINE = None
@@ -172,10 +178,12 @@ def predict_effect_label(token_text: str) -> str:
 ##################################################
 
 def find_synonym_match(word: str) -> str:
+    # Check our custom synonyms first
     for label, syns in SYNONYMS.items():
         if word in syns:
             return label
 
+    # Fallback to WordNet lookups
     for synset in wn.synsets(word):
         for lemma in synset.lemmas():
             lemma_name = lemma.name().replace("_", "").lower()
@@ -193,21 +201,33 @@ def fallback_effect_label(token_text: str) -> str:
 #  get_effects_for_token
 ##################################################
 
-def get_effects_for_token(token_text: str) -> List[str]:
+def get_effects_for_token(token_text: str) -> Tuple[List[str], str]:
     """
-    1) Attempt ML label.
-    2) If unknown, fallback synonyms.
+    Return a tuple of:
+    - list of audio files
+    - method used: 'ml', 'synonym', 'wordnet', 'generic'
     """
     token_text = token_text.lower().strip()
+
+    # Try ML model
     ml_label = predict_effect_label(token_text)
     if ml_label in LABEL_TO_EFFECTS:
-        return LABEL_TO_EFFECTS[ml_label]
+        return LABEL_TO_EFFECTS[ml_label], "ml"
 
-    fb = fallback_effect_label(token_text)
-    if fb in LABEL_TO_EFFECTS:
-        return LABEL_TO_EFFECTS[fb]
+    # Try custom synonyms
+    for label, syns in SYNONYMS.items():
+        if token_text in syns and label in LABEL_TO_EFFECTS:
+            return LABEL_TO_EFFECTS[label], "synonym"
 
-    return LABEL_TO_EFFECTS["generic_effect"]
+    # Try WordNet
+    for synset in wn.synsets(token_text):
+        for lemma in synset.lemmas():
+            lemma_name = lemma.name().replace("_", "").lower()
+            if lemma_name in LABEL_TO_EFFECTS:
+                return LABEL_TO_EFFECTS[lemma_name], "wordnet"
+
+    # Default fallback
+    return LABEL_TO_EFFECTS["generic_effect"], "generic"
 
 ##################################################
 #  AUDIO UTILS
@@ -242,19 +262,24 @@ def loop_audio_to_length(seg: AudioSegment, length_ms: int) -> AudioSegment:
     return extended[:length_ms]
 
 ##################################################
-# TTS PER-TOKEN (aligned)
+#  TTS FOR SENTENCES
 ##################################################
 
-def generate_token_tts(word: str) -> AudioSegment:
-    if not Config.TTS_ENABLED or not word.strip():
-        return AudioSegment.silent(duration=5)
+def generate_sentence_tts(sentence: str) -> AudioSegment:
+    """
+    Generate TTS for a full sentence at once, which
+    tends to sound more natural than per-token TTS.
+    """
+    if not Config.TTS_ENABLED or not sentence.strip():
+        return AudioSegment.silent(duration=50)
 
-    word = word.lower()
-    if word in TTS_CACHE:
-        return TTS_CACHE[word]
+    key = sentence.strip().lower()
+    if key in TTS_CACHE:
+        return TTS_CACHE[key]
 
+    # Google TTS
     try:
-        tts = gTTS(text=word, lang='en')
+        tts = gTTS(text=sentence, lang='en')
         with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tf:
             temp_path = tf.name
         tts.save(temp_path)
@@ -263,14 +288,15 @@ def generate_token_tts(word: str) -> AudioSegment:
         seg = seg.apply_gain(Config.TTS_VOICE_GAIN)
         os.remove(temp_path)
 
-        TTS_CACHE[word] = seg
+        fade_ms = 50
+        seg = seg.fade_in(fade_ms).fade_out(fade_ms)
+
+        TTS_CACHE[key] = seg
         return seg
 
     except Exception as e:
-        logger.warning(f"TTS generation failed for '{word}': {e}")
-        return AudioSegment.silent(duration=5)
-
-
+        logger.warning(f"TTS generation failed for sentence '{sentence[:30]}...': {e}")
+        return AudioSegment.silent(duration=100)
 
 ##################################################
 #  TEXT ANALYSIS
@@ -291,17 +317,8 @@ def analyze_text(text: str) -> Tuple[str, float]:
 
 def split_text_into_sentences(text: str) -> List[str]:
     doc = nlp(text)
+    # Filter out empty lines or weird blank segments
     return [s.text.strip() for s in doc.sents if s.text.strip()]
-
-def estimate_sentence_durations(text: str, wpm=150) -> List[int]:
-    sents = split_text_into_sentences(text)
-    durations = []
-    words_per_sec = wpm / 60.0
-    for sent in sents:
-        wc = len(sent.split())
-        read_time_s = wc / words_per_sec
-        durations.append(int(read_time_s * 1000))
-    return durations
 
 ##################################################
 #  FEAR STABS
@@ -309,20 +326,22 @@ def estimate_sentence_durations(text: str, wpm=150) -> List[int]:
 
 def generate_fear_stabs(length_ms=30000, chord=220.0) -> AudioSegment:
     """
-    A simple Markov-like chord stab approach for the 'fear' mood,
-    or just for adding tension. We overlay random stabs if fear is high.
+    A simple approach for 'negative' or 'fear' mood:
+    overlay random sine wave stabs.
     """
     seg = AudioSegment.silent(duration=length_ms)
-    ms_per_stab = 1000
+    ms_per_stab = 800
     fade_ms = 100
     t = 0
+    stab_times = []
     while t < length_ms:
-        if random.random() < 0.20:
+        if random.random() < Config.FEAR_STAB_PROB:
             wave = Sine(chord).to_audio_segment(duration=ms_per_stab)
-            wave = wave.fade_in(fade_ms).fade_out(fade_ms).apply_gain(-18)
+            wave = wave.fade_in(fade_ms).fade_out(fade_ms).apply_gain(Config.FEAR_STAB_GAIN)
             seg = seg.overlay(wave, position=t)
+            stab_times.append(t)
         t += ms_per_stab
-    return seg
+    return seg, stab_times
 
 ##################################################
 #  MOOD + AMBIENT
@@ -353,122 +372,161 @@ def add_ambient_layers(base: AudioSegment, text: str, total_len: int) -> AudioSe
     return lowered
 
 ##################################################
-# place_effects_with_timing: now includes token-level TTS
+#  BUILD THE NARRATION TRACK
 ##################################################
 
-def place_effects_with_timing(base_track: AudioSegment,
-                              text: str,
-                              durations: List[int],
-                              log_csv: str = "train/soundscape_timeline.csv",
-                              log_txt: str = "train/soundscape_log.txt") -> AudioSegment:
+def build_narration_track(
+    text: str,
+    timeline_csv_path="train/soundscape_timeline.csv",
+    log_txt_path="train/soundscape_log.txt"
+) -> AudioSegment:
     """
-    For each token:
-      - Compute fraction-based offset
-      - Generate TTS chunk for that token
-      - Overlay TTS chunk
-      - Overlay effect (if any)
-    This ensures TTS & effect start at the same time.
+    - Split text into sentences.
+    - For each sentence, generate TTS chunk.
+    - Then scan token-by-token (spacy doc) to see if we should overlay SFX inside that chunk.
+      * We'll place each SFX at a fraction of the TTS chunk length, matching the token index.
+      * We fade them in/out and keep track of cooldown, etc.
+    - Append each sentence's TTS+SFX chunk to a final 'narration_track'.
+    - Write a timeline CSV as we go with real offsets in final track.
     """
-    import time
-    final = base_track
-    current_pos = 0
     sents = split_text_into_sentences(text)
+    narration_track = AudioSegment.silent(duration=0)
 
-    timeline_lines = ["timestamp_ms,effect,sentence_idx,token\n"]
+    timeline_lines = ["timestamp_ms,effect,source,sentence_idx,token\n"]
     sentence_log = []
 
     last_applied = {}
     fear_history = []
     heartbeat_boost = 0
 
+    current_pos_in_narration = 0
+
+    # Sentence loop
     for i, sent in enumerate(sents):
-        dur = durations[i]
+        # Generate TTS for this entire sentence
+        tts_seg = generate_sentence_tts(sent)
+        if len(tts_seg) < 50:
+            # fallback
+            tts_seg = AudioSegment.silent(duration=500)
+
+        # We'll overlay SFX onto this "sentence_chunk" so it lines up with the voice
+        sentence_chunk = tts_seg
         doc = nlp(sent)
         tokens = list(doc)
         n_tokens = len(tokens)
 
-        applied_effects = set()
+        # track which effects we've placed to avoid spamming
         applied_this_sentence = 0
+        sentence_effects = []
 
-        for j, tok in enumerate(tokens):
-            raw = tok.text.strip().lower()
-            word = re.sub(r"[^a-z0-9]+","", raw)
-
-            # Fear memory
-            if "fear" in word:
-                fear_history.append(time.time())
+        # keep a rolling count
+        if "fear" in sent.lower():
+            fear_history.append(time.time())
             if len(fear_history) > Config.FEAR_MEMORY:
                 fear_history = fear_history[-Config.FEAR_MEMORY:]
-            if len(fear_history) >= Config.FEAR_THRESHOLD:
-                heartbeat_boost = min(Config.FEAR_MAX_BOOST, heartbeat_boost + Config.FEAR_VOL_INCREMENT)
-                fear_history.clear()
 
-            fraction = j / max(1, (n_tokens-1))
-            pos = current_pos + int(dur*fraction)
+        # For each token, place potential effect in the TTS chunk
+        for j, tok in enumerate(tokens):
+            raw = tok.text.strip()
+            # Remove punctuation for effect matching
+            word_clean = re.sub(r"[^a-z0-9]+","", raw.lower())
 
-            # 1) TTS chunk for this token
-            tts_seg = generate_token_tts(word)
-            final = final.overlay(tts_seg, position=pos)
-
-            # 2) Effects
-            fx_files = get_effects_for_token(word)
-            if not fx_files or fx_files == ["effect_generic.wav"]:
+            if not word_clean:
                 continue
 
+            # Possibly increment heartbeat_boost if we see repeated "fear"
+            if "fear" in word_clean:
+                fear_history.append(time.time())
+                if len(fear_history) >= Config.FEAR_THRESHOLD:
+                    heartbeat_boost = min(Config.FEAR_MAX_BOOST, heartbeat_boost + Config.FEAR_VOL_INCREMENT)
+                    fear_history.clear()
+
+            fx_files, fx_source = get_effects_for_token(word_clean)
+            if fx_files == ["effect_generic.wav"]:
+                # means no strong match
+                continue
             if applied_this_sentence >= Config.MAX_EFFECTS_PER_SENTENCE:
                 continue
 
+            # Place the effect in the chunk
+            fraction = j / max(1, (n_tokens - 1))
+            fx_offset = int(len(tts_seg) * fraction)
+
             for fx_file in fx_files:
-                if fx_file in last_applied:
-                    if (pos - last_applied[fx_file])< Config.EFFECT_COOLDOWN_MS:
-                        continue
+                # check cooldown
+                last_pos = last_applied.get(fx_file, -999999)
+                if (current_pos_in_narration + fx_offset) - last_pos < Config.EFFECT_COOLDOWN_MS:
+                    continue
 
                 fx_audio = load_audio(fx_file)
                 vol_gain = Config.VOLUME_EFFECTS
-                if "heartbeat" in fx_file and heartbeat_boost>0:
+                if "heartbeat" in fx_file and heartbeat_boost > 0:
                     vol_gain += heartbeat_boost
                 vol_gain += random.randint(-2,2)
-                fx_audio = fx_audio.fade_in(100).fade_out(100).apply_gain(vol_gain)
-                final = final.overlay(fx_audio, position=pos)
-                last_applied[fx_file] = pos
+                fx_audio = fx_audio.fade_in(50).fade_out(50).apply_gain(vol_gain)
+
+                sentence_chunk = sentence_chunk.overlay(fx_audio, position=fx_offset)
+                # record for timeline
+                real_timestamp = current_pos_in_narration + fx_offset
+                timeline_lines.append(f"{real_timestamp},{fx_file},{fx_source},{i+1},{word_clean}\n")
+                sentence_effects.append(fx_file)
+
+                last_applied[fx_file] = current_pos_in_narration + fx_offset
                 applied_this_sentence += 1
+                if applied_this_sentence >= Config.MAX_EFFECTS_PER_SENTENCE:
+                    break
 
-                timeline_lines.append(f"{pos},{fx_file},{i+1},{word}\n")
-                applied_effects.add(fx_file)
+        # We have now built a TTS + SFX chunk for this sentence
+        # Append to the final narration
+        sentence_chunk = sentence_chunk.fade_in(20).fade_out(20)
 
-        sentence_log.append(f"Section {i+1}: \"{sent}\" → Applied {sorted(list(applied_effects))}")
-        current_pos += dur
+        sentence_log.append(
+            f"Section {i+1}: \"{sent}\" → Applied {sorted(list(set(sentence_effects)))}"
+        )
 
-    with open(log_csv, "w", encoding="utf-8") as f:
+        # Append
+        start_of_chunk = len(narration_track)
+        narration_track = narration_track + sentence_chunk
+        end_of_chunk = len(narration_track)
+        current_pos_in_narration = end_of_chunk
+
+    with open(timeline_csv_path, "w", encoding="utf-8") as f:
         f.writelines(timeline_lines)
-    logger.info(f"Timeline CSV: {log_csv}")
+    logger.info(f"Timeline CSV saved: {timeline_csv_path}")
 
-    with open(log_txt, "w", encoding="utf-8") as f:
+    with open(log_txt_path, "w", encoding="utf-8") as f:
         for line in sentence_log:
             f.write(line + "\n")
-    logger.info(f"Sentence-level log: {log_txt}")
+    logger.info(f"Sentence log saved: {log_txt_path}")
 
-    return final
+    return narration_track
 
 ##################################################
 #  VISUALIZE THE TIMELINE
 ##################################################
 
-def visualize_soundscape(csv_path="train/soundscape_timeline.csv", out_fig="train/soundscape_timeline.png"):
+def visualize_soundscape(
+    csv_path="train/soundscape_timeline.csv",
+    out_fig="train/soundscape_timeline.png",
+    extra_events: Dict[str, List[int]] = None
+):
     import csv
+
     if not os.path.exists(csv_path):
         logger.warning("No timeline CSV found; skipping visualization.")
         return
+
     rows = []
     with open(csv_path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for r in reader:
             rows.append(r)
-    if not rows:
-        logger.warning("Timeline CSV empty; skipping.")
+
+    if not rows and not extra_events:
+        logger.warning("No timeline events found; skipping.")
         return
 
-    import matplotlib.pyplot as plt
+    # Prepare effect events
     events = []
     track_map = {}
     track_id = 0
@@ -476,29 +534,45 @@ def visualize_soundscape(csv_path="train/soundscape_timeline.csv", out_fig="trai
     for row in rows:
         ts = int(row["timestamp_ms"])
         fx = row["effect"]
-        sidx = int(row["sentence_idx"])
         tok = row["token"]
+
         if fx not in track_map:
             track_map[fx] = track_id
             track_id += 1
-        events.append((ts, fx, sidx, tok))
 
-    events.sort(key=lambda x:x[0])
-    data = []
-    for (ts, fx, s, tok) in events:
-        tid = track_map[fx]
-        data.append((ts,tid,fx,tok))
+        events.append((ts, fx, tok))
 
-    plt.figure(figsize=(12,6))
-    for (ts, track, fx, tok) in data:
+    # Sort and prepare plotting data
+    events.sort(key=lambda x: x[0])
+    data = [(ts, track_map[fx], fx, tok) for ts, fx, tok in events]
+
+    # Setup plot
+    plt.figure(figsize=(12, 6))
+
+    for ts, track, fx, tok in data:
         bar_len = 800
-        plt.plot([ts, ts+bar_len],[track, track], lw=6)
+        plt.plot([ts, ts + bar_len], [track, track], lw=6, label=fx if ts == data[0][0] else None)
+
+    if extra_events:
+        for label, timestamps in extra_events.items():
+            track_map[label] = track_id
+            for i, ts in enumerate(timestamps):
+                bar_len = 800
+                plt.plot(
+                    [ts, ts + bar_len],
+                    [track_id, track_id],
+                    lw=4,
+                    color="red",
+                    label=label if i == 0 else ""
+                )
+            track_id += 1
 
     yticks = []
     ylabels = []
-    for f, t in track_map.items():
+    for fx, t in sorted(track_map.items(), key=lambda x: x[1]):
         yticks.append(t)
-        ylabels.append(f)
+        ylabels.append(fx)
+
     plt.yticks(yticks, ylabels)
     plt.xlabel("Time (ms)")
     plt.title("Soundscape Timeline")
@@ -507,6 +581,7 @@ def visualize_soundscape(csv_path="train/soundscape_timeline.csv", out_fig="trai
     plt.savefig(out_fig, dpi=150)
     logger.info(f"Soundscape timeline chart saved to {out_fig}")
     plt.close()
+
 
 ##################################################
 #  CREATE FULL SOUNDSCAPE
@@ -519,13 +594,16 @@ def create_soundscape_full(
     model_path: str = None
 ) -> None:
     """
-    1) Load model if provided
-    2) Analyze text for mood/polarity
-    3) Create silent base
-    4) Add mood-based loop
-    5) Add ambient triggers
-    6) Token-level TTS + effect placement
-    7) If negative or 'fear', add Markov stabs
+    Overall process:
+    1) Load ML model
+    2) Analyze text for overall mood
+    3) Build a 'narration track' that contains sentence-level TTS plus the SFX inside each sentence
+    4) Determine total length of narration track
+    5) Build a base track at least 30s or narration length
+       with mood-based loop + ambient triggers
+    6) Overlay the narration track
+    7) overlay fear stabs if negative mood or 'fear' is in text
+    8) Export + visualize
     """
     if model_path:
         load_model(model_path)
@@ -533,10 +611,11 @@ def create_soundscape_full(
     mood, polarity = analyze_text(text)
     logger.info(f"Detected mood={mood}, polarity={polarity:.2f}")
 
-    # compute total length from sentence durations
-    durations = estimate_sentence_durations(text, wpm)
-    total_len = sum(durations)
-    total_len = max(total_len, Config.BASE_LOOP_DURATION)
+    # Build the TTS + SFX track first
+    narration_track = build_narration_track(text)
+
+    # figure out total length
+    total_len = max(len(narration_track), Config.BASE_LOOP_DURATION)
 
     # 1) base silence
     base = AudioSegment.silent(duration=total_len)
@@ -547,39 +626,32 @@ def create_soundscape_full(
     # 3) add ambient
     base_amb = add_ambient_layers(base_mood, text, total_len)
 
-    # 4) place token-level TTS + SFX
-    sfx_mix = place_effects_with_timing(
-        base_amb,
-        text,
-        durations,
-        "train/soundscape_timeline.csv",
-        "train/soundscape_log.txt"
-    )
+    # 4) overlay the narration track
+    final_mix = base_amb.overlay(narration_track, position=0)
 
     # 5) fear stabs
+    stab_times = []
     if mood=="negative" or "fear" in text.lower():
-        stabs = generate_fear_stabs(length_ms=total_len, chord=220.0)
-        sfx_mix = sfx_mix.overlay(stabs, position=0)
+        stabs, stab_times = generate_fear_stabs(length_ms=total_len, chord=220.0)
+        final_mix = final_mix.overlay(stabs, position=0)
 
-    # export
-    sfx_mix.export(output_path, format=Config.OUTPUT_FORMAT)
+    final_mix.export(output_path, format=Config.OUTPUT_FORMAT)
     logger.info(f"✅ Soundscape exported to {output_path}")
 
-    visualize_soundscape("train/soundscape_timeline.csv","train/soundscape_timeline.png")
+    visualize_soundscape(
+        csv_path="train/soundscape_timeline.csv",
+        out_fig="train/soundscape_timeline.png",
+        extra_events={"fear_stab": stab_times}
+    )
     logger.info("All done.")
 
 ##################################################
 #                GUI FRONT-END
 ##################################################
-from PyQt5.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QPushButton,
-    QFileDialog, QLineEdit, QTextEdit, QMessageBox, QHBoxLayout, QLabel
-)
-
 class SoundscapeGUI(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Dynamic Soundscape (Token-level TTS)")
+        self.setWindowTitle("Dynamic Soundscape (Improved Sentence-Level TTS)")
         self.resize(600,400)
 
         layout = QVBoxLayout()
@@ -618,7 +690,7 @@ class SoundscapeGUI(QWidget):
 
         # WPM
         wpm_layout = QHBoxLayout()
-        wpm_label = QLabel("WPM:")
+        wpm_label = QLabel("WPM (not heavily used now):")
         self.wpm_edit = QLineEdit("150")
         wpm_layout.addWidget(wpm_label)
         wpm_layout.addWidget(self.wpm_edit)
@@ -663,11 +735,10 @@ class SoundscapeGUI(QWidget):
             QMessageBox.warning(self, "No Text", "Please provide text via file or direct input.")
             return
 
-        wpm_val = 150
         try:
             wpm_val = int(self.wpm_edit.text())
         except:
-            pass
+            wpm_val = 150
 
         create_soundscape_full(
             text=text,
@@ -688,12 +759,12 @@ def run_gui():
 ##################################################
 
 def main():
-    parser = argparse.ArgumentParser(description="Dynamic Soundscape with Token-Level TTS")
+    parser = argparse.ArgumentParser(description="Dynamic Soundscape (Improved Sentence-Level TTS)")
     parser.add_argument("--gui", action="store_true", help="Launch GUI")
     parser.add_argument("--input", help="Path to input text file")
     parser.add_argument("--output", default="soundscape_out.wav", help="Output WAV file")
     parser.add_argument("--model", default=None, help="Trained ML model path (pkl)")
-    parser.add_argument("--wpm", type=int, default=150, help="Words per minute")
+    parser.add_argument("--wpm", type=int, default=150, help="Words per minute (unused in new approach)")
 
     args = parser.parse_args()
 

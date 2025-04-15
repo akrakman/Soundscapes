@@ -98,7 +98,6 @@ def train_sound_effect_model(csv_path="train/holmes_excerpt_dataset.csv",
     acc = accuracy_score(y_test, y_pred)
     print(f"Model accuracy: {acc:.2f}")
 
-    # 9. Save
     with open(model_path, "wb") as out_f:
         pickle.dump(model_pipeline, out_f)
     print(f"✅ Trained model saved to {model_path}")

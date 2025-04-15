@@ -1,9 +1,9 @@
-Section 1: "“It is not cold which makes me shiver,” said the woman in a low voice, changing her seat as requested." → Applied ['effect_heartbeat.wav', 'effect_train.wav']
+Section 1: "“It is not cold which makes me shiver,” said the woman in a low voice, changing her seat as requested." → Applied ['effect_heartbeat.wav', 'effect_ominous_silence.wav', 'effect_train.wav']
 Section 2: "“What, then?”
 
 “It is fear, Mr. Holmes." → Applied ['effect_heartbeat.wav', 'effect_ominous_silence.wav', 'effect_paper.wav']
 Section 3: "It is terror.”" → Applied []
-Section 4: "She raised her veil as she spoke, and we could see that she was indeed in a pitiable state of agitation, her face all drawn and grey, with restless frightened eyes, like those of some hunted animal." → Applied ['effect_heartbeat.wav', 'effect_ominous_silence.wav', 'effect_train.wav']
+Section 4: "She raised her veil as she spoke, and we could see that she was indeed in a pitiable state of agitation, her face all drawn and grey, with restless frightened eyes, like those of some hunted animal." → Applied ['effect_heartbeat.wav', 'effect_train.wav']
 Section 5: "Her features and figure were those of a woman of thirty, but her hair was shot with premature grey, and her expression was weary and haggard." → Applied ['effect_dog_barking.wav', 'effect_heartbeat.wav']
 Section 6: "Sherlock Holmes ran her over with one of his quick, all-comprehensive glances." → Applied ['effect_dog_barking.wav', 'effect_heartbeat.wav', 'effect_paper.wav']
 Section 7: "“You must not fear,” said he soothingly, bending forward and patting her forearm." → Applied ['effect_heartbeat.wav', 'effect_ominous_silence.wav', 'effect_paper.wav']
@@ -32,5 +32,5 @@ Section 25: "“Farintosh,” said he." → Applied ['effect_heartbeat.wav', 'ef
 Section 26: "“Ah yes, I recall the case; it was concerned with an opal tiara." → Applied ['effect_heartbeat.wav', 'effect_ominous_silence.wav', 'effect_train.wav']
 Section 27: "I think it was before your time, Watson." → Applied ['effect_heartbeat.wav']
 Section 28: "I can only say, madam, that I shall be happy to devote the same care to your case as I did to that of your friend." → Applied ['effect_heartbeat.wav', 'effect_ominous_silence.wav', 'effect_train.wav']
-Section 29: "As to reward, my profession is its own reward; but you are at liberty to defray whatever expenses I may be put to, at the time which suits you best." → Applied ['effect_heartbeat.wav', 'effect_train.wav']
+Section 29: "As to reward, my profession is its own reward; but you are at liberty to defray whatever expenses I may be put to, at the time which suits you best." → Applied ['effect_dog_barking.wav', 'effect_heartbeat.wav', 'effect_train.wav']
 Section 30: "And now I beg that you will lay before us everything that may help us in forming an opinion upon the matter.”" → Applied ['effect_heartbeat.wav', 'effect_ominous_silence.wav']
