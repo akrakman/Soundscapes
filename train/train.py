@@ -44,27 +44,22 @@ def train_sound_effect_model(csv_path="train/holmes_excerpt_dataset.csv",
     texts = []
     labels = []
 
-    # 1. Load CSV data
     with open(csv_path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
             raw_text = row["Text"]
             label = row["Effect"].strip().lower()
-            # Clean the text
             cleaned = clean_text(raw_text)
             texts.append(cleaned)
             labels.append(label)
 
-    # 2. Show label distribution before balancing
     print("Label Distribution Before:", Counter(labels))
 
-    # 3. Balance dataset
     texts, labels = balance_dataset(texts, labels)
 
-    # 4. Show label distribution after balancing
     print("Label Distribution After:", Counter(labels))
 
-    # 5. Train-test split
+    # Train-test split
     try:
         X_train, X_test, y_train, y_test = train_test_split(
             texts, labels, test_size=0.2, random_state=42, stratify=labels
@@ -75,7 +70,7 @@ def train_sound_effect_model(csv_path="train/holmes_excerpt_dataset.csv",
             texts, labels, test_size=0.2, random_state=42
         )
 
-    # 6. Pipeline: TF-IDF (word-level) + Logistic Regression
+    # Pipeline: TF-IDF (word-level) + Logistic Regression
     #    Use a simpler ngram_range=(1,2).
     model_pipeline = Pipeline([
         ("vectorizer", TfidfVectorizer(
@@ -90,17 +85,15 @@ def train_sound_effect_model(csv_path="train/holmes_excerpt_dataset.csv",
         ))
     ])
 
-    # 7. Train
     model_pipeline.fit(X_train, y_train)
 
-    # 8. Evaluate
     y_pred = model_pipeline.predict(X_test)
     acc = accuracy_score(y_test, y_pred)
     print(f"Model accuracy: {acc:.2f}")
 
     with open(model_path, "wb") as out_f:
         pickle.dump(model_pipeline, out_f)
-    print(f"✅ Trained model saved to {model_path}")
+    print(f"Trained model saved to {model_path}")
 
 if __name__ == "__main__":
     train_sound_effect_model()

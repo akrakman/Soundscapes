@@ -1,32 +1,11 @@
 ## Soundscape Generator
 
-A production-ready **dynamic soundscape generator** that takes a story or narrative input (`.txt`) and produces a **layered audio experience** (`.wav`) — complete with:
+A **dynamic soundscape generator** that takes a story or narrative input (`.txt`) and produces a **layered audio experience** (`.wav`) — complete with:
 
 - **Timeline visualization**
 - **Token-triggered sound effects** (ML + rule-based)
 - **Fear crescendo logic** (heartbeat intensifies with emotional tension)
 - **Markov-style fear stabs** to evoke suspense
-
----
-
-## 🔧 Features
-
-1. **Visual Timeline Plot**  
-   - Automatically generated `.png` showing sound effect overlays in time.
-2. **Reliable Keyword Triggers**  
-   - Hardcoded logic for consistent `dog_bark`, `paper_rustle`, and other critical cues.
-3. **ML-Based Sound Effect Prediction**  
-   - Trained model can dynamically classify tokens and predict suitable effects.
-4. **Fear Crescendo Logic**  
-   - Repeated mentions of fear intensify the `heartbeat` sound effect.
-5. **Markov-Based Fear Stabs**  
-   - Injects tension during negative emotional tone or fear-rich text.
-6. **Fallback Using WordNet**  
-   - Matches effects using synonyms for robustness.
-7. **Production Logging**  
-   - Soundscape timeline (`CSV`) and per-sentence effect logs (`TXT`).
-
----
 
 ## 📦 Requirements
 
@@ -52,14 +31,12 @@ python -m nltk.downloader stopwords wordnet omw-1.4
 python -m spacy download en_core_web_sm
 ```
 
----
-
 ## Usage
 
 ### Basic
 
 ```bash
-python main2.py --input story.txt --output soundscape.wav
+python soundscape.py --input story.txt --output soundscape.wav
 ```
 
 ### Optional Flags
@@ -77,7 +54,7 @@ python main2.py --input story.txt --output soundscape.wav
 
 ```
 .
-├── main2.py
+├── soundscape.py
 ├── train.py
 ├── audio/
 │   └── effect_*.wav              # All sound effects go here
@@ -85,10 +62,8 @@ python main2.py --input story.txt --output soundscape.wav
 │   ├── soundscape_log.txt
 │   ├── soundscape_timeline.csv
 │   └── soundscape_timeline.png
-└── story.txt                     # Your input story
+|   └── story.txt                     # Your input story
 ```
-
----
 
 ## 🤖 ML Model (Optional)
 
@@ -99,8 +74,6 @@ The system supports a trained ML model to predict sound labels from tokens:
 
 Without a model, the system will default to rule-based and synonym-matching logic.
 
----
-
 ## 📊 Output
 
 After running, you’ll get:
@@ -108,8 +81,6 @@ After running, you’ll get:
 - `train/soundscape_log.txt`: Sentence-by-sentence log of applied effects.
 - `train/soundscape_timeline.csv`: Timestamped list of sound overlays.
 - `train/soundscape_timeline.png`: Visual chart of the soundscape timeline.
-
----
 
 ## 🧠 Logic Highlights
 
