@@ -1,13 +1,8 @@
 ## Soundscape Generator
 
-A **dynamic soundscape generator** that takes a story or narrative input (`.txt`) and produces a **layered audio experience** (`.wav`) — complete with:
+This generator takes a story or narrative input (`.txt`) and produces a layered audio experience (`.wav`).
 
-- **Timeline visualization**
-- **Token-triggered sound effects** (ML + rule-based)
-- **Fear crescendo logic** (heartbeat intensifies with emotional tension)
-- **Markov-style fear stabs** to evoke suspense
-
-## 📦 Requirements
+## Requirements
 
 Install dependencies using:
 
@@ -43,14 +38,14 @@ python soundscape.py --input story.txt --output soundscape.wav
 
 ```bash
   --wpm 150                        # Reading speed (words per minute)
-  --model sound_effect_model.pkl  # Trained ML model path
+  --model sound_effect_model.pkl   # Trained ML model path
 ```
 
 > You **must train** your model using `train.py` beforehand to use the `--model` option.
 
 ---
 
-## 📁 Directory Structure
+## Directory Structure
 
 ```
 .
@@ -65,7 +60,7 @@ python soundscape.py --input story.txt --output soundscape.wav
 |   └── story.txt                     # Your input story
 ```
 
-## 🤖 ML Model (Optional)
+## ML Model (Optional)
 
 The system supports a trained ML model to predict sound labels from tokens:
 
@@ -74,16 +69,10 @@ The system supports a trained ML model to predict sound labels from tokens:
 
 Without a model, the system will default to rule-based and synonym-matching logic.
 
-## 📊 Output
+## Output
 
 After running, you’ll get:
 - `soundscape.wav`: The final audio output.
 - `train/soundscape_log.txt`: Sentence-by-sentence log of applied effects.
 - `train/soundscape_timeline.csv`: Timestamped list of sound overlays.
 - `train/soundscape_timeline.png`: Visual chart of the soundscape timeline.
-
-## 🧠 Logic Highlights
-
-- **Fear Triggering:** Repeated mentions of "fear" boost heartbeat sound intensity.
-- **Cooldown System:** Prevents sound effect spam via time gating per effect.
-- **Randomization:** Adds natural variation in gain and position.
